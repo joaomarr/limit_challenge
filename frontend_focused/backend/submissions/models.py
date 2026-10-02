@@ -94,7 +94,7 @@ class Document(models.Model):
     )
     title = models.CharField(max_length=255)
     doc_type = models.CharField(max_length=255)
-    uploaded_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(default=timezone.now)
     file_url = models.URLField(blank=True)
 
     class Meta:
