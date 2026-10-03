@@ -1,30 +1,27 @@
 'use client';
 
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
-import { PropsWithChildren, useMemo, useState } from 'react';
+import { CssBaseline, ThemeProvider } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { PropsWithChildren, useState } from 'react';
 
-function useTheme() {
-  return useMemo(
-    () =>
-      createTheme({
-        palette: {
-          primary: {
-            main: '#0f62fe',
-          },
-          background: {
-            default: '#f5f7fb',
-          },
-        },
-        shape: { borderRadius: 8 },
-      }),
-    [],
-  );
+import { theme } from './theme';
+
+function createQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        // Submissions change a few times a day, not every second; avoid refetching
+        // on every focus/mount while still picking up changes reasonably fast.
+        staleTime: 30_000,
+        retry: 1,
+      },
+    },
+  });
 }
 
 export default function Providers({ children }: PropsWithChildren) {
-  const theme = useTheme();
-  const [queryClient] = useState(() => new QueryClient());
+  // useState (not a module-level constant) so each server request gets its own client.
+  const [queryClient] = useState(createQueryClient);
 
   return (
     <QueryClientProvider client={queryClient}>
