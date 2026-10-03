@@ -1,5 +1,9 @@
 # Submission Tracker
 
+**Live demo:** https://limit-challenge-olive.vercel.app
+(API: https://submission-tracker-api-y6t9.onrender.com/api/submissions/. It's on a free
+instance that sleeps when idle, so the first load can take up to a minute.)
+
 A workspace for operations managers to triage broker submissions: filter the incoming
 queue, scan the latest activity on each one, and open the full record.
 
@@ -29,8 +33,8 @@ Tests: `python manage.py test submissions` (backend) and `npm test` (frontend).
 
 **Deploy.** The API runs on Render from [`render.yaml`](../render.yaml) (gunicorn and
 WhiteNoise, with settings from environment variables). The frontend runs on Vercel with
-`NEXT_PUBLIC_API_BASE_URL` pointing at the API. The free API instance sleeps when idle, so
-the first load can take up to a minute; the UI says so instead of failing.
+`NEXT_PUBLIC_API_BASE_URL` pointing at the API. That value is baked in at build time, so a
+Vercel build without it fails instead of shipping a site that calls localhost.
 
 ## Key decisions
 
