@@ -1,3 +1,4 @@
+import random
 from datetime import timedelta
 from random import choice, randint
 
@@ -16,6 +17,11 @@ class Command(BaseCommand):
             "--force",
             action="store_true",
             help="Clear existing submissions data before seeding",
+        )
+        parser.add_argument(
+            "--seed",
+            type=int,
+            help="Random seed, so the generated dataset is the same on every run",
         )
 
     def handle(self, *args, **options):
@@ -37,6 +43,9 @@ class Command(BaseCommand):
             models.TeamMember.objects.all().delete()
 
         fake = Faker()
+        if options["seed"] is not None:
+            Faker.seed(options["seed"])
+            random.seed(options["seed"])
         now = timezone.now()
 
         brokers = [

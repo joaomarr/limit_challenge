@@ -4,5 +4,6 @@ const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:800
 
 export const apiClient = axios.create({
   baseURL: apiBaseUrl,
-  timeout: 15_000,
+  // The free-tier demo API sleeps when idle and takes up to a minute to wake up.
+  timeout: 60_000,
 });

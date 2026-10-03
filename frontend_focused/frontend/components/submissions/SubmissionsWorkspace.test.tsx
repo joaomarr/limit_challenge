@@ -157,6 +157,17 @@ describe('SubmissionsWorkspace', () => {
     ]);
   });
 
+  it('explains a slow first load (the demo API sleeps when idle)', async () => {
+    get.mockImplementation(() => new Promise(() => {}));
+    renderWorkspace();
+
+    await advance(4_000);
+    expect(screen.queryByText(/Waking up the server/)).toBeNull();
+
+    await advance(1_000);
+    expect(screen.getByText(/Waking up the server/)).toBeDefined();
+  });
+
   it('shows the empty state with a way out', async () => {
     resetUrl('/submissions?status=lost');
     renderWorkspace();

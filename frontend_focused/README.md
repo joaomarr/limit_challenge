@@ -3,9 +3,10 @@
 A workspace for operations managers to triage broker submissions: filter the incoming
 queue, scan the latest activity on each one, and open the full record.
 
-The list is built for triage. Status sits in one-click tabs, high priority stands out, and
-each row shows the latest note so most decisions don't need a click. Every filter lives in
-the URL, so any view can be shared or bookmarked and survives a refresh.
+The list is built for triage. Status sits in one-click tabs that show how many submissions
+each one holds under the current filters, high priority stands out, and each row shows the
+latest note so most decisions don't need a click. Every filter lives in the URL, so any
+view can be shared or bookmarked and survives a refresh.
 
 ## Run it
 
@@ -25,6 +26,11 @@ npm run dev
 ```
 
 Tests: `python manage.py test submissions` (backend) and `npm test` (frontend).
+
+**Deploy.** The API runs on Render from [`render.yaml`](../render.yaml) (gunicorn and
+WhiteNoise, with settings from environment variables). The frontend runs on Vercel with
+`NEXT_PUBLIC_API_BASE_URL` pointing at the API. The free API instance sleeps when idle, so
+the first load can take up to a minute; the UI says so instead of failing.
 
 ## Key decisions
 
@@ -62,6 +68,9 @@ Tests: `python manage.py test submissions` (backend) and `npm test` (frontend).
   snake_case. Invalid filter values return 400 instead of an empty list.
 - **`hasDocuments` and `hasNotes` use `EXISTS`** rather than a join, so they can't
   inflate the counts.
+- **The tab counts come from `/api/submissions/status-counts/`.** It reuses the list
+  FilterSet minus the status filter, in one `GROUP BY` query. It returns a list rather than
+  `{status: count}`, because the camelCase renderer would rewrite `in_review` as a key.
 
 ## Found along the way
 
@@ -73,15 +82,16 @@ Tests: `python manage.py test submissions` (backend) and `npm test` (frontend).
 
 ## Tests
 
-- **Backend (17):** counts, latest note, every filter, ordering, page size, query count.
-- **Frontend (16):** URL parsing and updates, the debounce hook, and the workspace
+- **Backend (20):** counts, latest note, every filter, status counts, ordering, page size,
+  query counts.
+- **Frontend (18):** URL parsing and updates, the debounce hook, and the workspace
   rendered end to end with only the API client and router faked.
 
 Each bug fixed during development was reintroduced to confirm a test catches it.
 
 ## Beyond the brief
 
-Filters for priority, date range (`createdFrom`/`createdTo`), `hasDocuments` and
+Per-status counts on the tabs; filters for priority, date range (`createdFrom`/`createdTo`), `hasDocuments` and
 `hasNotes`; a page-size option (10/20/50, capped at 100 server-side); detail prefetch on
 hover; a "back" link that returns to the filtered list; and a distinct
 "page doesn't exist" state for stale links.

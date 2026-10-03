@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 
 import { useBrokerOptions } from '@/lib/hooks/useBrokerOptions';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
+import { useIsSlow } from '@/lib/hooks/useIsSlow';
 import { useSubmissionFilters } from '@/lib/hooks/useSubmissionFilters';
 import { useStatusCounts, useSubmissionsList } from '@/lib/hooks/useSubmissions';
 import { rememberListHref } from '@/lib/list-return';
@@ -33,6 +34,7 @@ export function SubmissionsWorkspace() {
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isPending, isError, isFetching, isPlaceholderData, refetch } = submissionsQuery;
+  const isSlowFirstLoad = useIsSlow(isPending, 5_000);
   const companySearch = useDebouncedCallback((value: string) => {
     updateFilters({ companySearch: value || undefined });
   }, SEARCH_DELAY_MS);
@@ -65,7 +67,7 @@ export function SubmissionsWorkspace() {
   return (
     <WorkspaceLayout
       tableScrollRef={tableScrollRef}
-      header={<Header count={data?.count} />}
+      header={<Header count={data?.count} isSlow={isSlowFirstLoad} />}
       filters={
         <FilterBar
           filters={filters}
@@ -110,7 +112,11 @@ export function SubmissionsWorkspace() {
   );
 }
 
-function Header({ count }: { count: number | undefined }) {
+function Header({ count, isSlow }: { count: number | undefined; isSlow: boolean }) {
+  let status = '\u00a0';
+  if (count !== undefined) status = `${count} ${count === 1 ? 'result' : 'results'}`;
+  else if (isSlow) status = 'Waking up the server, this can take up to a minute…';
+
   return (
     <>
       <Typography variant="overline" color="primary" sx={{ lineHeight: 2 }}>
@@ -119,7 +125,7 @@ function Header({ count }: { count: number | undefined }) {
       <Stack direction="row" alignItems="baseline" spacing={2}>
         <Typography variant="h1">Submissions</Typography>
         <Typography color="text.secondary" aria-live="polite">
-          {count === undefined ? ' ' : `${count} ${count === 1 ? 'result' : 'results'}`}
+          {status}
         </Typography>
       </Stack>
     </>

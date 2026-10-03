@@ -1,0 +1,23 @@
+# Render Blueprint for the API (frontend_focused/backend). The frontend deploys on Vercel.
+services:
+  - type: web
+    name: submission-tracker-api
+    runtime: python
+    plan: free
+    rootDir: frontend_focused/backend
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    # SQLite on an ephemeral disk is fine for a read-only demo: the dataset is
+    # recreated on start, and --seed keeps it identical so shared links keep working.
+    startCommand: >-
+      python manage.py migrate --noinput &&
+      python manage.py seed_submissions --seed 42 &&
+      gunicorn server.wsgi
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.1
+      - key: DJANGO_DEBUG
+        value: "false"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
