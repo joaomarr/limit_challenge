@@ -3,11 +3,18 @@
 import { Link as MuiLink } from '@mui/material';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import { getListHref } from '@/lib/list-return';
 
 export function BackToListLink() {
   const router = useRouter();
+
+  // The <Link> only prefetches its href ("/submissions"); the click goes to the
+  // filtered list URL, so prefetch that one too.
+  useEffect(() => {
+    router.prefetch(getListHref());
+  }, [router]);
 
   return (
     <MuiLink

@@ -17,7 +17,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable}`}>
-      <body>
+      {/* Extensions (e.g. ColorZilla) inject attributes into <body> before hydration. */}
+      <body suppressHydrationWarning>
         <AppRouterCacheProvider>
           <Providers>{children}</Providers>
         </AppRouterCacheProvider>

@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Button, Paper, Skeleton, Stack, Typography } from '@mui/material';
+import { Box, Button, Paper, Stack, Typography } from '@mui/material';
 import { isAxiosError } from 'axios';
 
 import { useCachedSubmission, useSubmissionDetail } from '@/lib/hooks/useSubmissions';
@@ -8,6 +8,7 @@ import { useCachedSubmission, useSubmissionDetail } from '@/lib/hooks/useSubmiss
 import { BackToListLink } from './BackToListLink';
 import { ContactsSection } from './ContactsSection';
 import { DetailHeader } from './DetailHeader';
+import { DetailGrid, DetailPageFrame, HeaderSkeleton, SectionSkeleton } from './DetailSkeleton';
 import { DocumentsSection } from './DocumentsSection';
 import { NotesTimeline } from './NotesTimeline';
 
@@ -37,61 +38,34 @@ export function SubmissionDetailView({ id }: { id: string }) {
     body = (
       <Stack spacing={4}>
         {core ? <DetailHeader submission={core} /> : <HeaderSkeleton />}
-        <Box
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: { xs: '1fr', lg: 'minmax(0, 1fr) 360px' },
-            gap: 3,
-            alignItems: 'start',
-          }}
-        >
-          {detail ? <NotesTimeline notes={detail.notes} /> : <SectionSkeleton lines={6} />}
-          <Stack spacing={3}>
-            {detail ? (
-              <ContactsSection contacts={detail.contacts} />
-            ) : (
-              <SectionSkeleton lines={3} />
-            )}
-            {detail ? (
-              <DocumentsSection documents={detail.documents} />
-            ) : (
-              <SectionSkeleton lines={3} />
-            )}
-          </Stack>
-        </Box>
+        <DetailGrid
+          main={detail ? <NotesTimeline notes={detail.notes} /> : <SectionSkeleton lines={6} />}
+          aside={
+            <>
+              {detail ? (
+                <ContactsSection contacts={detail.contacts} />
+              ) : (
+                <SectionSkeleton lines={3} />
+              )}
+              {detail ? (
+                <DocumentsSection documents={detail.documents} />
+              ) : (
+                <SectionSkeleton lines={3} />
+              )}
+            </>
+          }
+        />
       </Stack>
     );
   }
 
   return (
-    <Box sx={{ maxWidth: 1200, mx: 'auto', px: { xs: 2, md: 4 }, py: { xs: 2, md: 3 } }}>
+    <DetailPageFrame>
       <Box sx={{ mb: 3 }}>
         <BackToListLink />
       </Box>
       {body}
-    </Box>
-  );
-}
-
-function HeaderSkeleton() {
-  return (
-    <Stack spacing={1.5} aria-busy aria-label="Loading submission">
-      <Skeleton width={120} />
-      <Skeleton width="45%" height={48} />
-      <Skeleton width="30%" />
-      <Skeleton width="70%" height={64} />
-    </Stack>
-  );
-}
-
-function SectionSkeleton({ lines }: { lines: number }) {
-  return (
-    <Paper sx={{ p: 2.5 }}>
-      <Skeleton width={120} height={32} sx={{ mb: 1 }} />
-      {Array.from({ length: lines }, (_, i) => (
-        <Skeleton key={i} width={`${90 - (i % 3) * 15}%`} />
-      ))}
-    </Paper>
+    </DetailPageFrame>
   );
 }
 
