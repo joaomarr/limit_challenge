@@ -49,8 +49,8 @@ class SubmissionListSerializer(serializers.ModelSerializer):
         ]
 
     def get_latest_note(self, submission):
-        # Iterate the prefetched notes (already newest first) instead of calling
-        # .first(), which would hit the database once per submission.
+        # Read from the prefetched notes (already newest first). Calling .filter()
+        # or .order_by() here would bypass the prefetch and query once per row.
         notes = list(submission.notes.all())
         if not notes:
             return None
