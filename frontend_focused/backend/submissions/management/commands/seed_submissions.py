@@ -50,7 +50,7 @@ class Command(BaseCommand):
         companies = [
             models.Company.objects.create(
                 legal_name=fake.unique.company(),
-                industry=fake.job().split(" ")[0],
+                industry=fake.job().split(",")[0],
                 headquarters_city=fake.city(),
             )
             for _ in range(12)

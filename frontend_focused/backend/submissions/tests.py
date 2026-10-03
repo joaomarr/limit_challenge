@@ -78,6 +78,18 @@ class SubmissionListTests(APITestCase):
 
         self.assertEqual(ids, [newer.id, older.id])
 
+    def test_page_size_defaults_to_20_and_is_capped(self):
+        for _ in range(25):
+            make_submission()
+
+        default = self.client.get(self.url).json()
+        custom = self.client.get(self.url, {"pageSize": 5}).json()
+        capped = self.client.get(self.url, {"pageSize": 1000}).json()
+
+        self.assertEqual(len(default["results"]), 20)
+        self.assertEqual(len(custom["results"]), 5)
+        self.assertEqual(len(capped["results"]), 25)
+
     def test_query_count_does_not_grow_with_page_size(self):
         for _ in range(10):
             submission = make_submission()
