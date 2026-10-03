@@ -18,10 +18,11 @@ from django.contrib import admin
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from submissions.views import SubmissionViewSet
+from submissions.views import BrokerViewSet, SubmissionViewSet
 
 router = DefaultRouter()
-router.register("submissions", SubmissionViewSet)
+router.register("submissions", SubmissionViewSet, basename="submission")
+router.register("brokers", BrokerViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
