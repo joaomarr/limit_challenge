@@ -1,17 +1,21 @@
 'use client';
 
 import { LinearProgress, Stack, Typography } from '@mui/material';
+import { isAxiosError } from 'axios';
 import { useEffect, useRef } from 'react';
 
 import { useBrokerOptions } from '@/lib/hooks/useBrokerOptions';
+import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { useSubmissionFilters } from '@/lib/hooks/useSubmissionFilters';
 import { useSubmissionsList } from '@/lib/hooks/useSubmissions';
 
 import { FilterBar } from './FilterBar';
 import { PaginationFooter } from './PaginationFooter';
-import { EmptyState, ErrorState } from './ListStates';
+import { EmptyState, ErrorState, PageNotFoundState } from './ListStates';
 import { SubmissionsTable } from './SubmissionsTable';
 import { WorkspaceLayout } from './WorkspaceLayout';
+
+const SEARCH_DELAY_MS = 300;
 
 const CLEARED_FILTERS = {
   status: undefined,
@@ -27,7 +31,17 @@ export function SubmissionsWorkspace() {
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isPending, isError, isFetching, isPlaceholderData, refetch } = submissionsQuery;
-  const clearFilters = () => updateFilters(CLEARED_FILTERS);
+  const companySearch = useDebouncedCallback((value: string) => {
+    updateFilters({ companySearch: value || undefined });
+  }, SEARCH_DELAY_MS);
+
+  // Cancel synchronously in the click handler: a search typed just before clearing
+  // must not land afterwards. (Cancelling from an effect depended on when the URL
+  // change re-rendered, which raced the timer.)
+  const clearFilters = () => {
+    companySearch.cancel();
+    updateFilters(CLEARED_FILTERS);
+  };
 
   // A new page or filter should start at the top of the table, not where the
   // previous result set was scrolled to.
@@ -35,11 +49,12 @@ export function SubmissionsWorkspace() {
     tableScrollRef.current?.scrollTo({ top: 0 });
   }, [filters]);
 
+  const { error } = submissionsQuery;
   let message;
-  if (isError) {
-    message = (
-      <ErrorState onRetry={() => (filters.page > 1 ? updateFilters({ page: 1 }) : refetch())} />
-    );
+  if (isError && isAxiosError(error) && error.response?.status === 404) {
+    message = <PageNotFoundState onFirstPage={() => updateFilters({ page: 1 })} />;
+  } else if (isError) {
+    message = <ErrorState onRetry={() => refetch()} />;
   } else if (data && data.results.length === 0) {
     message = <EmptyState onClearFilters={clearFilters} />;
   }
@@ -53,6 +68,7 @@ export function SubmissionsWorkspace() {
           filters={filters}
           onChange={updateFilters}
           onClear={clearFilters}
+          onCompanySearch={companySearch.run}
           brokers={brokersQuery.data}
           brokersLoading={brokersQuery.isPending}
         />
@@ -93,7 +109,7 @@ export function SubmissionsWorkspace() {
 function Header({ count }: { count: number | undefined }) {
   return (
     <>
-      <Typography variant="overline" color="primary">
+      <Typography variant="overline" color="primary" sx={{ lineHeight: 2 }}>
         Operations
       </Typography>
       <Stack direction="row" alignItems="baseline" spacing={2}>

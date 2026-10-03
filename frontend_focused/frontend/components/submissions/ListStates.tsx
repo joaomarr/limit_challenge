@@ -43,3 +43,14 @@ export function ErrorState({ onRetry }: { onRetry: () => void }) {
     />
   );
 }
+
+// A stale or hand-edited URL can point past the last page (the API answers 404).
+export function PageNotFoundState({ onFirstPage }: { onFirstPage: () => void }) {
+  return (
+    <ListMessage
+      title="This page doesn't exist"
+      description="There are fewer results than this page number. The list may have changed since the link was shared."
+      action={{ label: 'Go to first page', onClick: onFirstPage }}
+    />
+  );
+}

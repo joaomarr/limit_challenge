@@ -22,7 +22,12 @@ export function PaginationFooter({ page, pageSize, total, onPageChange, onPageSi
         {total ? `Showing ${first}–${last} of ${total}` : ' '}
       </Typography>
       <Stack direction="row" alignItems="center" spacing={1}>
-        <Typography variant="body2" color="text.secondary" id="rows-per-page-label">
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          id="rows-per-page-label"
+          sx={{ display: { xs: 'none', sm: 'block' } }}
+        >
           Rows per page
         </Typography>
         <Select

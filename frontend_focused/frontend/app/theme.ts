@@ -20,7 +20,7 @@ export const theme = createTheme({
     h1: {
       fontFamily: displayFamily,
       fontWeight: 500,
-      fontSize: '2.5rem',
+      fontSize: '2.25rem',
       letterSpacing: '-0.02em',
     },
     h2: {

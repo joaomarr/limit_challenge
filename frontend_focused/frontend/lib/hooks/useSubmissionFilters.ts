@@ -9,6 +9,8 @@ import { SubmissionListFilters, SubmissionPriority, SubmissionStatus } from '@/l
 const STATUSES: SubmissionStatus[] = ['new', 'in_review', 'closed', 'lost'];
 const PRIORITIES: SubmissionPriority[] = ['high', 'medium', 'low'];
 
+const DEFAULTS: Record<string, unknown> = { page: 1, pageSize: DEFAULT_PAGE_SIZE };
+
 export function parseFilters(params: URLSearchParams): SubmissionListFilters {
   const status = params.get('status');
   const priority = params.get('priority');
@@ -40,7 +42,8 @@ export function useSubmissionFilters() {
       const params = new URLSearchParams(searchParams.toString());
 
       for (const [key, value] of Object.entries(changes)) {
-        if (value === undefined || value === '') {
+        // Defaults stay out of the URL so each view has a single, canonical link.
+        if (value === undefined || value === '' || DEFAULTS[key] === value) {
           params.delete(key);
         } else {
           params.set(key, String(value));

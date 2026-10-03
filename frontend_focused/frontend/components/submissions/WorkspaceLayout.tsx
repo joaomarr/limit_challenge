@@ -26,12 +26,12 @@ export function WorkspaceLayout({
 }: Props) {
   return (
     <Stack
-      spacing={2.5}
+      spacing={2}
       sx={{
         height: '100dvh',
         minHeight: 560,
         px: { xs: 2, md: 4 },
-        py: { xs: 2, md: 3 },
+        py: { xs: 2, md: 2.5 },
         maxWidth: 1600,
         mx: 'auto',
       }}

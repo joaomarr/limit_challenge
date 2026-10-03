@@ -53,7 +53,9 @@ export function SubmissionsTable({ submissions, isLoading, skeletonRows, message
           ))}
         </TableRow>
       </TableHead>
-      <TableBody>
+      {/* A different result set is a new list, not the old one reordered: remounting
+          the body stops reused rows from "moving" (which counts as layout shift). */}
+      <TableBody key={submissions?.map((submission) => submission.id).join(',')}>
         {message ? (
           <TableRow>
             <TableCell colSpan={COLUMNS.length} sx={{ border: 0 }}>

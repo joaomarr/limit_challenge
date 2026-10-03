@@ -1,19 +1,15 @@
 import { TextField } from '@mui/material';
-import { useEffect, useState } from 'react';
-
-import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
-
-const SEARCH_DELAY_MS = 300;
+import { useState } from 'react';
 
 interface Props {
   value: string;
+  /** Called on every keystroke with the trimmed text; the caller debounces it. */
   onSearch: (value: string) => void;
 }
 
 export function CompanySearchField({ value, onSearch }: Props) {
   const [input, setInput] = useState(value);
   const [prevValue, setPrevValue] = useState(value);
-  const { run, cancel } = useDebouncedCallback(onSearch, SEARCH_DELAY_MS);
 
   // The URL changed. Only overwrite what's typed when it really disagrees (e.g.
   // "Clear filters"); our own trimmed search must not eat a trailing space.
@@ -25,9 +21,6 @@ export function CompanySearchField({ value, onSearch }: Props) {
     }
   }
 
-  // Any search still scheduled is stale once the URL changes.
-  useEffect(() => cancel, [value, cancel]);
-
   return (
     <TextField
       size="small"
@@ -37,7 +30,7 @@ export function CompanySearchField({ value, onSearch }: Props) {
       value={input}
       onChange={(event) => {
         setInput(event.target.value);
-        run(event.target.value.trim());
+        onSearch(event.target.value.trim());
       }}
       sx={{ flex: 1, minWidth: 220 }}
     />

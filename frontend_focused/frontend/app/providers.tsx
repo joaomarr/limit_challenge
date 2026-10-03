@@ -2,6 +2,7 @@
 
 import { CssBaseline, ThemeProvider } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { isAxiosError } from 'axios';
 import { PropsWithChildren, useState } from 'react';
 
 import { theme } from './theme';
@@ -13,7 +14,11 @@ function createQueryClient() {
         // Submissions change a few times a day, not every second; avoid refetching
         // on every focus/mount while still picking up changes reasonably fast.
         staleTime: 30_000,
-        retry: 1,
+        // Retry transient failures (network, 5xx) once; a 4xx will fail the same way again.
+        retry: (failureCount, error) => {
+          const status = isAxiosError(error) ? error.response?.status : undefined;
+          return failureCount < 1 && !(status && status < 500);
+        },
       },
     },
   });
