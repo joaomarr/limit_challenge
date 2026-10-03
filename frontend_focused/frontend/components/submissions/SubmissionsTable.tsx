@@ -14,6 +14,7 @@ import { ReactNode } from 'react';
 
 import { monoFontFamily } from '@/app/theme';
 import { formatDate, formatRelative } from '@/lib/format';
+import { usePrefetchSubmission } from '@/lib/hooks/useSubmissions';
 import { SubmissionListItem } from '@/lib/types';
 
 import { PriorityLabel } from './PriorityLabel';
@@ -81,6 +82,8 @@ const rowSx = {
 
 function SubmissionRow({ submission }: { submission: SubmissionListItem }) {
   const { company, latestNote } = submission;
+  const prefetch = usePrefetchSubmission();
+  const prefetchDetail = () => prefetch(String(submission.id));
 
   return (
     <TableRow
@@ -97,6 +100,9 @@ function SubmissionRow({ submission }: { submission: SubmissionListItem }) {
         <MuiLink
           component={Link}
           href={`/submissions/${submission.id}`}
+          // The link covers the whole row, so hovering anywhere signals intent.
+          onMouseEnter={prefetchDetail}
+          onFocus={prefetchDetail}
           underline="none"
           color="text.primary"
           noWrap

@@ -1,10 +1,12 @@
 'use client';
 
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
 
 import { apiClient } from '@/lib/api-client';
 import {
   PaginatedResponse,
+  SubmissionCore,
   SubmissionDetail,
   SubmissionListFilters,
   SubmissionListItem,
@@ -15,7 +17,8 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export const submissionKeys = {
   all: ['submissions'] as const,
-  list: (filters: SubmissionListFilters) => [...submissionKeys.all, 'list', filters] as const,
+  lists: () => [...submissionKeys.all, 'list'] as const,
+  list: (filters: SubmissionListFilters) => [...submissionKeys.lists(), filters] as const,
   detail: (id: string) => [...submissionKeys.all, 'detail', id] as const,
 };
 
@@ -56,4 +59,36 @@ export function useSubmissionDetail(id: string) {
     queryFn: () => fetchSubmissionDetail(id),
     enabled: Boolean(id),
   });
+}
+
+/**
+ * The list already fetched the core fields of a submission (company, status,
+ * owner...). Reading them from the cache lets the detail page render its header
+ * immediately while contacts, documents and notes are still loading.
+ */
+export function useCachedSubmission(id: string): SubmissionCore | undefined {
+  const queryClient = useQueryClient();
+  return useMemo(() => {
+    const lists = queryClient.getQueriesData<PaginatedResponse<SubmissionListItem>>({
+      queryKey: submissionKeys.lists(),
+    });
+    for (const [, page] of lists) {
+      const match = page?.results.find((submission) => String(submission.id) === id);
+      if (match) return match;
+    }
+    return undefined;
+  }, [queryClient, id]);
+}
+
+/** Start loading a submission's detail before the user clicks (hover/focus intent). */
+export function usePrefetchSubmission() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (id: string) =>
+      queryClient.prefetchQuery({
+        queryKey: submissionKeys.detail(id),
+        queryFn: () => fetchSubmissionDetail(id),
+      }),
+    [queryClient],
+  );
 }

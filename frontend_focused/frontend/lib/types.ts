@@ -64,10 +64,10 @@ export interface NoteDetail {
   createdAt: string;
 }
 
-export interface SubmissionDetail extends Omit<
-  SubmissionListItem,
-  'documentCount' | 'noteCount' | 'latestNote'
-> {
+/** Fields shared by the list item and the detail payload. */
+export type SubmissionCore = Omit<SubmissionListItem, 'documentCount' | 'noteCount' | 'latestNote'>;
+
+export interface SubmissionDetail extends SubmissionCore {
   contacts: Contact[];
   documents: Document[];
   notes: NoteDetail[];

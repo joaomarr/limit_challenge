@@ -8,6 +8,7 @@ import { useBrokerOptions } from '@/lib/hooks/useBrokerOptions';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { useSubmissionFilters } from '@/lib/hooks/useSubmissionFilters';
 import { useSubmissionsList } from '@/lib/hooks/useSubmissions';
+import { rememberListHref } from '@/lib/list-return';
 
 import { FilterBar } from './FilterBar';
 import { PaginationFooter } from './PaginationFooter';
@@ -43,10 +44,11 @@ export function SubmissionsWorkspace() {
     updateFilters(CLEARED_FILTERS);
   };
 
-  // A new page or filter should start at the top of the table, not where the
-  // previous result set was scrolled to.
+  // A new page or filter starts at the top of the table, and becomes the view
+  // "Back to submissions" returns to from the detail page.
   useEffect(() => {
     tableScrollRef.current?.scrollTo({ top: 0 });
+    rememberListHref(window.location.pathname + window.location.search);
   }, [filters]);
 
   const { error } = submissionsQuery;
