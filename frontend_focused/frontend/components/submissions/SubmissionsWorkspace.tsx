@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react';
 import { useBrokerOptions } from '@/lib/hooks/useBrokerOptions';
 import { useDebouncedCallback } from '@/lib/hooks/useDebouncedCallback';
 import { useSubmissionFilters } from '@/lib/hooks/useSubmissionFilters';
-import { useSubmissionsList } from '@/lib/hooks/useSubmissions';
+import { useStatusCounts, useSubmissionsList } from '@/lib/hooks/useSubmissions';
 import { rememberListHref } from '@/lib/list-return';
 
 import { FilterBar } from './FilterBar';
@@ -29,6 +29,7 @@ export function SubmissionsWorkspace() {
   const { filters, updateFilters } = useSubmissionFilters();
   const submissionsQuery = useSubmissionsList(filters);
   const brokersQuery = useBrokerOptions();
+  const statusCountsQuery = useStatusCounts(filters);
   const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isPending, isError, isFetching, isPlaceholderData, refetch } = submissionsQuery;
@@ -73,6 +74,7 @@ export function SubmissionsWorkspace() {
           onCompanySearch={companySearch.run}
           brokers={brokersQuery.data}
           brokersLoading={brokersQuery.isPending}
+          statusCounts={statusCountsQuery.data}
         />
       }
       overlay={

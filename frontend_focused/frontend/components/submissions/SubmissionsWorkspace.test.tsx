@@ -19,8 +19,19 @@ function mockApi({
 }: { submissions?: (params: Params) => unknown } = {}) {
   get.mockImplementation(async (url: string, config?: { params?: Params }) => {
     if (url === '/brokers/') return { data: [] };
+    if (url === '/submissions/status-counts/') return { data: statusCounts(config?.params ?? {}) };
     return { data: submissions(config?.params ?? {}) };
   });
+}
+
+function statusCounts(params: Params) {
+  const isHigh = params.priority === 'high';
+  return [
+    { status: 'new', count: isHigh ? 3 : 9 },
+    { status: 'in_review', count: isHigh ? 2 : 6 },
+    { status: 'closed', count: 4 },
+    { status: 'lost', count: 0 },
+  ];
 }
 
 function submissionRequests() {
@@ -69,7 +80,7 @@ describe('SubmissionsWorkspace', () => {
     expect(submissionRequests()).toEqual([
       expect.objectContaining({ status: 'new', companySearch: 'acme', page: 1, pageSize: 50 }),
     ]);
-    expect(screen.getByRole('tab', { selected: true })).toHaveProperty('textContent', 'New');
+    expect(screen.getByRole('tab', { selected: true }).textContent).toMatch(/^New/);
     expect(searchInput().value).toBe('acme');
   });
 
@@ -117,6 +128,7 @@ describe('SubmissionsWorkspace', () => {
     resetUrl('/submissions?page=9');
     get.mockImplementation(async (url: string, config?: { params?: Params }) => {
       if (url === '/brokers/') return { data: [] };
+      if (url === '/submissions/status-counts/') return { data: statusCounts({}) };
       if (config?.params?.page === 9) {
         throw new AxiosError('Invalid page', '404', undefined, undefined, {
           status: 404,
@@ -130,6 +142,19 @@ describe('SubmissionsWorkspace', () => {
     click('Go to first page');
 
     expect(window.location.search).toBe('');
+  });
+
+  it('shows per-status counts that follow the other filters, not the status', async () => {
+    resetUrl('/submissions?status=lost&priority=high&page=2');
+    renderWorkspace();
+    await advance(0);
+
+    expect(screen.getByRole('tab', { name: 'New 3' })).toBeDefined();
+    expect(screen.getByRole('tab', { name: 'All 9' })).toBeDefined();
+    const countRequests = get.mock.calls.filter(([url]) => url === '/submissions/status-counts/');
+    expect(countRequests.map(([, config]) => config?.params)).toEqual([
+      { priority: 'high', brokerId: undefined, companySearch: undefined },
+    ]);
   });
 
   it('shows the empty state with a way out', async () => {

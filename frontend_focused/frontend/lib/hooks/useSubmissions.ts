@@ -10,7 +10,11 @@ import {
   SubmissionDetail,
   SubmissionListFilters,
   SubmissionListItem,
+  StatusCount,
 } from '@/lib/types';
+
+/** Counts ignore status (each tab is a status) and pagination. */
+type StatusCountFilters = Pick<SubmissionListFilters, 'priority' | 'brokerId' | 'companySearch'>;
 
 export const PAGE_SIZE_OPTIONS = [10, 20, 50];
 export const DEFAULT_PAGE_SIZE = 20;
@@ -20,6 +24,8 @@ export const submissionKeys = {
   lists: () => [...submissionKeys.all, 'list'] as const,
   list: (filters: SubmissionListFilters) => [...submissionKeys.lists(), filters] as const,
   detail: (id: string) => [...submissionKeys.all, 'detail', id] as const,
+  statusCounts: (filters: StatusCountFilters) =>
+    [...submissionKeys.all, 'status-counts', filters] as const,
 };
 
 async function fetchSubmissions(filters: SubmissionListFilters) {
@@ -91,4 +97,21 @@ export function usePrefetchSubmission() {
       }),
     [queryClient],
   );
+}
+
+async function fetchStatusCounts(filters: StatusCountFilters) {
+  const response = await apiClient.get<StatusCount[]>('/submissions/status-counts/', {
+    params: filters,
+  });
+  return response.data;
+}
+
+export function useStatusCounts({ priority, brokerId, companySearch }: SubmissionListFilters) {
+  // Built from the relevant fields only, so switching tabs or pages reuses the cache.
+  const filters = { priority, brokerId, companySearch };
+  return useQuery({
+    queryKey: submissionKeys.statusCounts(filters),
+    queryFn: () => fetchStatusCounts(filters),
+    placeholderData: keepPreviousData,
+  });
 }

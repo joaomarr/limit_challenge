@@ -88,3 +88,8 @@ export interface SubmissionListFilters {
   page: number;
   pageSize: number;
 }
+
+export interface StatusCount {
+  status: SubmissionStatus;
+  count: number;
+}

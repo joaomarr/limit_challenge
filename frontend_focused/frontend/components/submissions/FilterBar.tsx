@@ -1,7 +1,13 @@
-import { Button, MenuItem, Stack, Tab, Tabs, TextField } from '@mui/material';
+import { Box, Button, MenuItem, Stack, Tab, Tabs, TextField } from '@mui/material';
 
 import { PRIORITY_LABELS, STATUS_LABELS } from '@/lib/submission-labels';
-import { Broker, SubmissionListFilters, SubmissionPriority, SubmissionStatus } from '@/lib/types';
+import {
+  Broker,
+  StatusCount,
+  SubmissionListFilters,
+  SubmissionPriority,
+  SubmissionStatus,
+} from '@/lib/types';
 
 import { CompanySearchField } from './CompanySearchField';
 
@@ -14,6 +20,7 @@ interface Props {
   onCompanySearch: (companySearch: string) => void;
   brokers: Broker[] | undefined;
   brokersLoading: boolean;
+  statusCounts: StatusCount[] | undefined;
 }
 
 export function FilterBar({
@@ -23,7 +30,12 @@ export function FilterBar({
   onCompanySearch,
   brokers,
   brokersLoading,
+  statusCounts,
 }: Props) {
+  const countFor = (status: string) =>
+    statusCounts?.find((entry) => entry.status === status)?.count;
+  const total = statusCounts?.reduce((sum, entry) => sum + entry.count, 0);
+
   const hasActiveFilters = Boolean(
     filters.status || filters.priority || filters.brokerId || filters.companySearch,
   );
@@ -52,9 +64,13 @@ export function FilterBar({
           '& .MuiTab-root': { minHeight: 40, minWidth: 0, px: 2 },
         }}
       >
-        <Tab value={ALL} label="All" />
+        <Tab value={ALL} label={<TabLabel label="All" count={total} />} />
         {Object.entries(STATUS_LABELS).map(([value, label]) => (
-          <Tab key={value} value={value} label={label} />
+          <Tab
+            key={value}
+            value={value}
+            label={<TabLabel label={label} count={countFor(value)} />}
+          />
         ))}
       </Tabs>
 
@@ -113,6 +129,30 @@ export function FilterBar({
           Clear filters
         </Button>
       </Stack>
+    </Stack>
+  );
+}
+
+// The count reserves its width (tabular digits, min width) so tabs don't resize and
+// nudge their neighbours when the numbers change with the filters.
+function TabLabel({ label, count }: { label: string; count: number | undefined }) {
+  return (
+    <Stack direction="row" spacing={0.75} alignItems="baseline">
+      <span>{label}</span>
+      {/* Real space so the accessible name reads "New 9", not "New9". */}{' '}
+      <Box
+        component="span"
+        sx={{
+          minWidth: '2ch',
+          textAlign: 'left',
+          fontSize: '0.75rem',
+          fontVariantNumeric: 'tabular-nums',
+          color: count ? 'text.secondary' : 'text.disabled',
+          visibility: count === undefined ? 'hidden' : 'visible',
+        }}
+      >
+        {count ?? 0}
+      </Box>
     </Stack>
   );
 }

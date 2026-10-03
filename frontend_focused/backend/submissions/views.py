@@ -1,5 +1,8 @@
 from django.db.models import Count
 from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
 
 from . import models, serializers
 from .filters import SubmissionFilterSet
@@ -28,6 +31,31 @@ class SubmissionViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == "retrieve":
             return serializers.SubmissionDetailSerializer
         return serializers.SubmissionListSerializer
+
+    @action(detail=False, url_path="status-counts")
+    def status_counts(self, request):
+        """Submissions per status, honouring every list filter except status itself.
+
+        Powers the counts on the status tabs: with "High priority" selected, each tab
+        shows how many high-priority submissions it holds.
+        """
+        params = request.query_params.copy()
+        params.pop("status", None)
+        filterset = SubmissionFilterSet(params, queryset=models.Submission.objects.all())
+        if not filterset.is_valid():
+            raise ValidationError(filterset.errors)
+
+        totals = dict(
+            filterset.qs.order_by().values_list("status").annotate(total=Count("id"))
+        )
+        # A list rather than {status: count}: the camelCase renderer would rewrite
+        # "in_review" as a key into "inReview".
+        return Response(
+            [
+                {"status": status, "count": totals.get(status, 0)}
+                for status in models.Submission.Status.values
+            ]
+        )
 
 
 class BrokerViewSet(viewsets.ReadOnlyModelViewSet):

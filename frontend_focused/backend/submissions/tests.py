@@ -159,6 +159,41 @@ class SubmissionFilterTests(APITestCase):
         self.assertEqual(response.status_code, 400)
 
 
+class StatusCountsTests(APITestCase):
+    url = "/api/submissions/status-counts/"
+
+    def test_counts_every_status_and_ignores_the_status_filter(self):
+        make_submission(status=models.Submission.Status.NEW)
+        make_submission(status=models.Submission.Status.NEW)
+        make_submission(status=models.Submission.Status.LOST)
+
+        with self.assertNumQueries(1):
+            data = self.client.get(self.url, {"status": "lost"}).json()
+
+        self.assertEqual(
+            data,
+            [
+                {"status": "new", "count": 2},
+                {"status": "in_review", "count": 0},
+                {"status": "closed", "count": 0},
+                {"status": "lost", "count": 1},
+            ],
+        )
+
+    def test_respects_the_other_filters(self):
+        make_submission(status=models.Submission.Status.NEW, priority=models.Submission.Priority.HIGH)
+        make_submission(status=models.Submission.Status.NEW, priority=models.Submission.Priority.LOW)
+
+        data = self.client.get(self.url, {"priority": "high"}).json()
+
+        self.assertEqual(data[0], {"status": "new", "count": 1})
+
+    def test_invalid_filter_returns_400(self):
+        response = self.client.get(self.url, {"priority": "urgent"})
+
+        self.assertEqual(response.status_code, 400)
+
+
 class SubmissionDetailTests(APITestCase):
     def test_includes_related_records(self):
         submission = make_submission()
