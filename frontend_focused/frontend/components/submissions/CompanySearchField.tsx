@@ -11,7 +11,9 @@ export function CompanySearchField({ value, onSearch }: Props) {
   return (
     <TextField
       size="small"
-      label="Search company"
+      label="Company"
+      placeholder="Search by name…"
+      slotProps={{ inputLabel: { shrink: true } }}
       value={value}
       onChange={(event) => onSearch(event.target.value)}
       sx={{ flex: 1, minWidth: 220 }}

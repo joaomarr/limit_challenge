@@ -10,7 +10,8 @@ import {
   SubmissionListItem,
 } from '@/lib/types';
 
-export const SUBMISSIONS_PAGE_SIZE = 10; // matching PAGE_SIZE in Django settings
+export const PAGE_SIZE_OPTIONS = [10, 20, 50];
+export const DEFAULT_PAGE_SIZE = 20;
 
 export const submissionKeys = {
   all: ['submissions'] as const,
@@ -26,6 +27,7 @@ async function fetchSubmissions(filters: SubmissionListFilters) {
       companySearch: filters.companySearch,
       priority: filters.priority,
       page: filters.page,
+      pageSize: filters.pageSize,
     },
   });
   return response.data;

@@ -86,4 +86,5 @@ export interface SubmissionListFilters {
   brokerId?: string;
   companySearch?: string;
   page: number;
+  pageSize: number;
 }

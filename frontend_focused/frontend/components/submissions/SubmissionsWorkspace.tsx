@@ -1,14 +1,17 @@
 'use client';
 
-import { Box, LinearProgress, Pagination, Paper, Stack, Typography } from '@mui/material';
+import { LinearProgress, Stack, Typography } from '@mui/material';
+import { useEffect, useRef } from 'react';
 
 import { useBrokerOptions } from '@/lib/hooks/useBrokerOptions';
 import { useSubmissionFilters } from '@/lib/hooks/useSubmissionFilters';
-import { SUBMISSIONS_PAGE_SIZE, useSubmissionsList } from '@/lib/hooks/useSubmissions';
+import { useSubmissionsList } from '@/lib/hooks/useSubmissions';
 
 import { FilterBar } from './FilterBar';
-import { EmptyState, ErrorState, TableSkeleton } from './ListStates';
+import { PaginationFooter } from './PaginationFooter';
+import { EmptyState, ErrorState } from './ListStates';
 import { SubmissionsTable } from './SubmissionsTable';
+import { WorkspaceLayout } from './WorkspaceLayout';
 
 const CLEARED_FILTERS = {
   status: undefined,
@@ -21,68 +24,84 @@ export function SubmissionsWorkspace() {
   const { filters, updateFilters } = useSubmissionFilters();
   const submissionsQuery = useSubmissionsList(filters);
   const brokersQuery = useBrokerOptions();
+  const tableScrollRef = useRef<HTMLDivElement>(null);
 
   const { data, isPending, isError, isFetching, isPlaceholderData, refetch } = submissionsQuery;
-  const pageCount = data ? Math.max(1, Math.ceil(data.count / SUBMISSIONS_PAGE_SIZE)) : 1;
   const clearFilters = () => updateFilters(CLEARED_FILTERS);
 
+  // A new page or filter should start at the top of the table, not where the
+  // previous result set was scrolled to.
+  useEffect(() => {
+    tableScrollRef.current?.scrollTo({ top: 0 });
+  }, [filters]);
+
+  let message;
+  if (isError) {
+    message = (
+      <ErrorState onRetry={() => (filters.page > 1 ? updateFilters({ page: 1 }) : refetch())} />
+    );
+  } else if (data && data.results.length === 0) {
+    message = <EmptyState onClearFilters={clearFilters} />;
+  }
+
   return (
-    <Stack spacing={3}>
-      <Box>
-        <Typography variant="overline" color="primary">
-          Operations
-        </Typography>
-        <Stack direction="row" alignItems="baseline" spacing={2}>
-          <Typography variant="h1">Submissions</Typography>
-          {data && (
-            <Typography color="text.secondary" aria-live="polite">
-              {data.count} {data.count === 1 ? 'result' : 'results'}
-            </Typography>
-          )}
-        </Stack>
-      </Box>
-
-      <FilterBar
-        filters={filters}
-        onChange={updateFilters}
-        onClear={clearFilters}
-        brokers={brokersQuery.data}
-        brokersLoading={brokersQuery.isPending}
-      />
-
-      <Paper sx={{ position: 'relative', overflow: 'hidden' }}>
-        {/* Background refetch (e.g. a filter change): keep the previous rows visible
-            and show a thin bar instead of flashing a skeleton. */}
-        {isFetching && !isPending && (
-          <LinearProgress sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2 }} />
-        )}
-
-        {isPending ? (
-          <TableSkeleton />
-        ) : isError ? (
-          <ErrorState onRetry={() => (filters.page > 1 ? updateFilters({ page: 1 }) : refetch())} />
-        ) : data.results.length === 0 ? (
-          <EmptyState onClearFilters={clearFilters} />
-        ) : (
-          <Box sx={{ opacity: isPlaceholderData ? 0.6 : 1, transition: 'opacity 150ms' }}>
-            <SubmissionsTable submissions={data.results} />
-          </Box>
-        )}
-      </Paper>
-
-      {data && pageCount > 1 && (
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Typography variant="body2" color="text.secondary">
-            Page {filters.page} of {pageCount}
-          </Typography>
-          <Pagination
-            page={filters.page}
-            count={pageCount}
-            onChange={(_, page) => updateFilters({ page })}
-            shape="rounded"
+    <WorkspaceLayout
+      tableScrollRef={tableScrollRef}
+      header={<Header count={data?.count} />}
+      filters={
+        <FilterBar
+          filters={filters}
+          onChange={updateFilters}
+          onClear={clearFilters}
+          brokers={brokersQuery.data}
+          brokersLoading={brokersQuery.isPending}
+        />
+      }
+      overlay={
+        // Background refetch: keep the previous rows (dimmed) and show a thin bar
+        // instead of swapping back to skeletons.
+        isFetching &&
+        !isPending && (
+          <LinearProgress
+            sx={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, zIndex: 3 }}
+          />
+        )
+      }
+      table={
+        <Stack sx={{ opacity: isPlaceholderData ? 0.55 : 1, transition: 'opacity 150ms' }}>
+          <SubmissionsTable
+            submissions={data?.results}
+            isLoading={isPending}
+            skeletonRows={filters.pageSize}
+            message={message}
           />
         </Stack>
-      )}
-    </Stack>
+      }
+      footer={
+        <PaginationFooter
+          page={filters.page}
+          pageSize={filters.pageSize}
+          total={data?.count}
+          onPageChange={(page) => updateFilters({ page })}
+          onPageSizeChange={(pageSize) => updateFilters({ pageSize })}
+        />
+      }
+    />
+  );
+}
+
+function Header({ count }: { count: number | undefined }) {
+  return (
+    <>
+      <Typography variant="overline" color="primary">
+        Operations
+      </Typography>
+      <Stack direction="row" alignItems="baseline" spacing={2}>
+        <Typography variant="h1">Submissions</Typography>
+        <Typography color="text.secondary" aria-live="polite">
+          {count === undefined ? ' ' : `${count} ${count === 1 ? 'result' : 'results'}`}
+        </Typography>
+      </Stack>
+    </>
   );
 }

@@ -1,75 +1,105 @@
 import {
-  Box,
   Link as MuiLink,
+  Skeleton,
   Table,
   TableBody,
   TableCell,
-  TableContainer,
   TableHead,
   TableRow,
   Tooltip,
   Typography,
 } from '@mui/material';
 import Link from 'next/link';
+import { ReactNode } from 'react';
 
+import { monoFontFamily } from '@/app/theme';
 import { formatDate, formatRelative } from '@/lib/format';
 import { SubmissionListItem } from '@/lib/types';
-import { monoFontFamily } from '@/app/theme';
 
 import { PriorityLabel } from './PriorityLabel';
 import { StatusChip } from './StatusChip';
 
+// Fixed column widths (table-layout: fixed) so the layout doesn't reflow when a
+// new page brings longer or shorter company names.
+const COLUMNS = [
+  { label: 'Company', width: '22%' },
+  { label: 'Status', width: 112 },
+  { label: 'Priority', width: 104 },
+  { label: 'Broker', width: '16%' },
+  { label: 'Owner', width: '13%' },
+  { label: 'Latest note', width: undefined },
+  { label: 'Received', width: 128, align: 'right' as const },
+];
+
+const ROW_HEIGHT = 68;
+
 interface Props {
-  submissions: SubmissionListItem[];
+  submissions: SubmissionListItem[] | undefined;
+  isLoading: boolean;
+  skeletonRows: number;
+  /** Rendered instead of rows (empty or error state), below the header. */
+  message?: ReactNode;
 }
 
-export function SubmissionsTable({ submissions }: Props) {
+export function SubmissionsTable({ submissions, isLoading, skeletonRows, message }: Props) {
   return (
-    <TableContainer>
-      <Table size="small" sx={{ minWidth: 900 }}>
-        <TableHead>
-          <TableRow>
-            <TableCell>Company</TableCell>
-            <TableCell>Status</TableCell>
-            <TableCell>Priority</TableCell>
-            <TableCell>Broker</TableCell>
-            <TableCell>Owner</TableCell>
-            <TableCell sx={{ width: '28%' }}>Latest note</TableCell>
-            <TableCell align="right">Received</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {submissions.map((submission, index) => (
-            <SubmissionRow key={submission.id} submission={submission} index={index} />
+    <Table stickyHeader size="small" sx={{ tableLayout: 'fixed', minWidth: 960 }}>
+      <TableHead>
+        <TableRow>
+          {COLUMNS.map((column) => (
+            <TableCell key={column.label} align={column.align} sx={{ width: column.width }}>
+              {column.label}
+            </TableCell>
           ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {message ? (
+          <TableRow>
+            <TableCell colSpan={COLUMNS.length} sx={{ border: 0 }}>
+              {message}
+            </TableCell>
+          </TableRow>
+        ) : isLoading || !submissions ? (
+          Array.from({ length: skeletonRows }, (_, i) => <SkeletonRow key={i} />)
+        ) : (
+          submissions.map((submission) => (
+            <SubmissionRow key={submission.id} submission={submission} />
+          ))
+        )}
+      </TableBody>
+    </Table>
   );
 }
 
-function SubmissionRow({ submission, index }: { submission: SubmissionListItem; index: number }) {
+const rowSx = {
+  height: ROW_HEIGHT,
+  '& td': { py: 1.25, verticalAlign: 'top' },
+};
+
+function SubmissionRow({ submission }: { submission: SubmissionListItem }) {
   const { company, latestNote } = submission;
 
   return (
     <TableRow
       hover
       sx={{
-        // The company link stretches over the whole row (see ::after below), so the
-        // row is clickable while keeping a real <a> for keyboard and middle-click.
+        ...rowSx,
+        // The company link stretches over the whole row (see ::after), so the row is
+        // clickable while keeping a real <a> for keyboard, middle-click and new tabs.
         position: 'relative',
-        animation: 'rise-in 240ms ease-out both',
-        animationDelay: `${index * 25}ms`,
-        '& td': { py: 1.5, verticalAlign: 'top' },
+        cursor: 'pointer',
       }}
     >
       <TableCell>
         <MuiLink
           component={Link}
           href={`/submissions/${submission.id}`}
-          underline="hover"
+          underline="none"
           color="text.primary"
+          noWrap
           sx={{
+            display: 'block',
             fontWeight: 600,
             '&::after': { content: '""', position: 'absolute', inset: 0 },
             '&:focus-visible': { outline: 'none' },
@@ -93,48 +123,64 @@ function SubmissionRow({ submission, index }: { submission: SubmissionListItem; 
         <PriorityLabel priority={submission.priority} />
       </TableCell>
       <TableCell>
-        <Typography variant="body2">{submission.broker.name}</Typography>
+        <Typography variant="body2" noWrap>
+          {submission.broker.name}
+        </Typography>
       </TableCell>
       <TableCell>
-        <Typography variant="body2">{submission.owner.fullName}</Typography>
+        <Typography variant="body2" noWrap>
+          {submission.owner.fullName}
+        </Typography>
       </TableCell>
       <TableCell>
-        {latestNote ? (
-          <Box>
-            <Typography
-              variant="body2"
-              sx={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {latestNote.bodyPreview}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {latestNote.authorName} · {formatRelative(latestNote.createdAt)}
-            </Typography>
-          </Box>
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No notes yet
-          </Typography>
-        )}
-        <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.5 }}>
-          {pluralize(submission.documentCount, 'document')} ·{' '}
-          {pluralize(submission.noteCount, 'note')}
+        <Typography variant="body2" noWrap color={latestNote ? 'text.primary' : 'text.secondary'}>
+          {latestNote ? latestNote.bodyPreview : 'No notes yet'}
+        </Typography>
+        <Typography variant="caption" color="text.secondary" noWrap component="div">
+          {latestNote && `${latestNote.authorName}, ${formatRelative(latestNote.createdAt)} · `}
+          {pluralize(submission.documentCount, 'doc')} · {pluralize(submission.noteCount, 'note')}
         </Typography>
       </TableCell>
       <TableCell align="right">
-        <Tooltip title={formatDate(submission.createdAt)}>
+        <Tooltip title={formatDate(submission.createdAt)} placement="left">
           <Typography
             variant="body2"
-            sx={{ fontFamily: monoFontFamily, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
+            noWrap
+            sx={{ fontFamily: monoFontFamily, fontSize: '0.8rem' }}
           >
             {formatRelative(submission.createdAt)}
           </Typography>
         </Tooltip>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <TableRow sx={rowSx}>
+      <TableCell>
+        <Skeleton width="75%" />
+        <Skeleton width="50%" height={18} />
+      </TableCell>
+      <TableCell>
+        <Skeleton width={64} height={24} />
+      </TableCell>
+      <TableCell>
+        <Skeleton width={56} />
+      </TableCell>
+      <TableCell>
+        <Skeleton width="80%" />
+      </TableCell>
+      <TableCell>
+        <Skeleton width="70%" />
+      </TableCell>
+      <TableCell>
+        <Skeleton width="90%" />
+        <Skeleton width="45%" height={18} />
+      </TableCell>
+      <TableCell align="right">
+        <Skeleton width={56} sx={{ ml: 'auto' }} />
       </TableCell>
     </TableRow>
   );

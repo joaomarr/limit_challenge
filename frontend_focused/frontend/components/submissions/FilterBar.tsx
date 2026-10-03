@@ -56,6 +56,7 @@ export function FilterBar({ filters, onChange, onClear, brokers, brokersLoading 
               priority: (event.target.value || undefined) as SubmissionPriority | undefined,
             })
           }
+          slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}
           sx={{ minWidth: 150 }}
         >
           <MenuItem value="">Any priority</MenuItem>
@@ -72,6 +73,7 @@ export function FilterBar({ filters, onChange, onClear, brokers, brokersLoading 
           value={brokers ? (filters.brokerId ?? '') : ''}
           onChange={(event) => onChange({ brokerId: event.target.value || undefined })}
           disabled={brokersLoading}
+          slotProps={{ select: { displayEmpty: true }, inputLabel: { shrink: true } }}
           sx={{ minWidth: 240 }}
         >
           <MenuItem value="">All brokers</MenuItem>
@@ -81,11 +83,14 @@ export function FilterBar({ filters, onChange, onClear, brokers, brokersLoading 
             </MenuItem>
           ))}
         </TextField>
-        {hasActiveFilters && (
-          <Button onClick={onClear} sx={{ whiteSpace: 'nowrap' }}>
-            Clear filters
-          </Button>
-        )}
+        {/* Hidden rather than unmounted so the row doesn't reflow when it appears. */}
+        <Button
+          onClick={onClear}
+          sx={{ whiteSpace: 'nowrap', visibility: hasActiveFilters ? 'visible' : 'hidden' }}
+          tabIndex={hasActiveFilters ? 0 : -1}
+        >
+          Clear filters
+        </Button>
       </Stack>
     </Stack>
   );

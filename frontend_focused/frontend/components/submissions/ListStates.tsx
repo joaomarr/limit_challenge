@@ -1,29 +1,4 @@
-import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
-
-export function TableSkeleton({ rows = 8 }: { rows?: number }) {
-  return (
-    <Stack spacing={0} aria-busy aria-label="Loading submissions">
-      {Array.from({ length: rows }, (_, i) => (
-        <Stack
-          key={i}
-          direction="row"
-          spacing={3}
-          sx={{ px: 2, py: 2, borderBottom: 1, borderColor: 'divider' }}
-        >
-          <Box sx={{ flex: 2 }}>
-            <Skeleton width="70%" />
-            <Skeleton width="45%" height={16} />
-          </Box>
-          <Skeleton width={70} />
-          <Skeleton width={60} />
-          <Skeleton sx={{ flex: 1 }} />
-          <Skeleton sx={{ flex: 1 }} />
-          <Skeleton sx={{ flex: 2 }} />
-        </Stack>
-      ))}
-    </Stack>
-  );
-}
+import { Button, Stack, Typography } from '@mui/material';
 
 interface MessageProps {
   title: string;
@@ -33,7 +8,7 @@ interface MessageProps {
 
 function ListMessage({ title, description, action }: MessageProps) {
   return (
-    <Stack alignItems="center" spacing={1} sx={{ py: 8, px: 2, textAlign: 'center' }}>
+    <Stack alignItems="center" spacing={1} sx={{ py: 10, px: 2, textAlign: 'center' }}>
       <Typography variant="h3" component="p">
         {title}
       </Typography>
@@ -41,7 +16,7 @@ function ListMessage({ title, description, action }: MessageProps) {
         {description}
       </Typography>
       {action && (
-        <Button variant="outlined" onClick={action.onClick} sx={{ mt: 1 }}>
+        <Button variant="outlined" onClick={action.onClick} sx={{ mt: 1.5 }}>
           {action.label}
         </Button>
       )}

@@ -3,6 +3,7 @@
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useMemo } from 'react';
 
+import { DEFAULT_PAGE_SIZE, PAGE_SIZE_OPTIONS } from '@/lib/hooks/useSubmissions';
 import { SubmissionListFilters, SubmissionPriority, SubmissionStatus } from '@/lib/types';
 
 const STATUSES: SubmissionStatus[] = ['new', 'in_review', 'closed', 'lost'];
@@ -12,6 +13,7 @@ export function parseFilters(params: URLSearchParams): SubmissionListFilters {
   const status = params.get('status');
   const priority = params.get('priority');
   const page = Number(params.get('page'));
+  const pageSize = Number(params.get('pageSize'));
 
   return {
     status: STATUSES.includes(status as SubmissionStatus)
@@ -23,6 +25,7 @@ export function parseFilters(params: URLSearchParams): SubmissionListFilters {
     brokerId: params.get('brokerId') || undefined,
     companySearch: params.get('companySearch') || undefined,
     page: Number.isInteger(page) && page > 0 ? page : 1,
+    pageSize: PAGE_SIZE_OPTIONS.includes(pageSize) ? pageSize : DEFAULT_PAGE_SIZE,
   };
 }
 
