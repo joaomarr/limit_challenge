@@ -23,15 +23,6 @@ export function SectionSkeleton({ lines }: { lines: number }) {
 }
 
 /** Same grid as the loaded page, so swapping in the real content doesn't shift. */
-export function DetailBodySkeleton() {
-  return (
-    <Stack spacing={4}>
-      <HeaderSkeleton />
-      <DetailGrid main={<SectionSkeleton lines={6} />} aside={<SectionSkeleton lines={3} />} />
-    </Stack>
-  );
-}
-
 export function DetailGrid({ main, aside }: { main: React.ReactNode; aside: React.ReactNode }) {
   return (
     <Box
