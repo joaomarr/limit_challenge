@@ -1,4 +1,104 @@
-# Submission Tracker Take-home Challenge
+# Submission Tracker
+
+A workspace for operations managers to triage broker submissions: filter the incoming
+queue, scan the latest activity on each one, and open the full record.
+
+The list is built for triage. Status sits in one-click tabs, high priority stands out, and
+each row shows the latest note so most decisions don't need a click. Every filter lives in
+the URL, so any view can be shared or bookmarked and survives a refresh.
+
+## Run it
+
+```bash
+# Backend (http://localhost:8000)
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_submissions
+python manage.py runserver
+
+# Frontend (http://localhost:3000)
+cd frontend
+npm install
+npm run dev
+```
+
+Tests: `python manage.py test submissions` (backend) and `npm test` (frontend).
+
+## Key decisions
+
+**Frontend**
+
+- **The URL is the only source of truth for filters.** Filters are parsed and validated
+  from the URL and never mirrored into component state, so there's nothing to keep in
+  sync. Updates use `history.replaceState`: Next keeps `useSearchParams` in sync, no
+  server round trip is made, and the history isn't flooded with one entry per click.
+  Default values stay out of the URL so each view has a single link.
+- **No global store.** Server state lives in React Query (a query key factory,
+  `keepPreviousData` so changing a filter doesn't flash skeletons). Filters live in the
+  URL. Nothing else needs to be shared, so Redux would only add code.
+- **Navigation feels instant.** Hovering a row prefetches its detail, and the detail
+  `loading.tsx` renders the header straight from the list cache. From the list, the real
+  header appears in about 10ms, and only contacts, documents and notes wait for the API.
+- **Stable layout.** An app-shell layout where only the table scrolls, fixed column
+  widths and skeletons that mirror the table keep layout shift at about 0 (CLS measured
+  in Chrome) across filters, pages and loading states.
+- **Search is debounced, and clearing cancels it in the click handler.** Cancelling from
+  an effect raced with Next's deferred URL update, so a search typed just before
+  "Clear filters" could land afterwards. A test reproduces that race.
+
+**Backend**
+
+- **List and detail are shaped differently.** The list returns counts and a latest-note
+  preview in 3 queries per page (`select_related` + one `prefetch_related`), and the
+  detail prefetches contacts, documents and notes. A test pins the query count.
+- **Counts use `distinct=True`.** Two `Count`s over joined tables multiply each other (a
+  submission with 4 documents and 5 notes reported 20 and 20).
+- **Ordering is explicit, with an id tiebreaker.** `Meta.ordering` is dropped on
+  `GROUP BY` queries, which made pagination unstable.
+- **The API contract is camelCase both ways.** The camel-case renderer converts response
+  keys, and its middleware converts query params (`?brokerId=`), so the Python stays
+  snake_case. Invalid filter values return 400 instead of an empty list.
+- **`hasDocuments` and `hasNotes` use `EXISTS`** rather than a join, so they can't
+  inflate the counts.
+
+## Found along the way
+
+- The seed's document dates were ignored: `auto_now_add` overwrites explicit values, so
+  every document shared one timestamp. It now uses `default=timezone.now`, like the
+  other models.
+- `requirements.txt` listed packages the project never imports (pynvim, pikepdf, lxml…).
+  It's trimmed to direct dependencies and verified in a fresh venv.
+
+## Tests
+
+- **Backend (17):** counts, latest note, every filter, ordering, page size, query count.
+- **Frontend (16):** URL parsing and updates, the debounce hook, and the workspace
+  rendered end to end with only the API client and router faked.
+
+Each bug fixed during development was reintroduced to confirm a test catches it.
+
+## Beyond the brief
+
+Filters for priority, date range (`createdFrom`/`createdTo`), `hasDocuments` and
+`hasNotes`; a page-size option (10/20/50, capped at 100 server-side); detail prefetch on
+hover; a "back" link that returns to the filtered list; and a distinct
+"page doesn't exist" state for stale links.
+
+## What I'd do next
+
+- Add the date and has-documents/has-notes filters to the UI (the API already supports
+  them).
+- Sort by priority and age, so "new and high priority" is the default view.
+- Return `pageSize` and `totalPages` from the API so the client doesn't duplicate the
+  page size.
+- At scale: compute the latest note with a `Subquery` instead of prefetching every note,
+  and run E2E tests (Playwright) against a production build.
+
+---
+
+# Original challenge brief
 
 This repository hosts the boilerplate for the Submission Tracker assignment. It includes a Django +
 Django REST Framework backend and a Next.js frontend scaffold so candidates can focus on API
