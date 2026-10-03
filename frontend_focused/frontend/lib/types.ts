@@ -4,7 +4,7 @@ export type SubmissionPriority = 'high' | 'medium' | 'low';
 export interface Broker {
   id: number;
   name: string;
-  primaryContactEmail: string | null;
+  primaryContactEmail: string;
 }
 
 export interface Company {
@@ -82,6 +82,8 @@ export interface PaginatedResponse<T> {
 
 export interface SubmissionListFilters {
   status?: SubmissionStatus;
+  priority?: SubmissionPriority;
   brokerId?: string;
   companySearch?: string;
+  page: number;
 }

@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import { QueryKey, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api-client';
 import {
@@ -11,7 +10,13 @@ import {
   SubmissionListItem,
 } from '@/lib/types';
 
-const SUBMISSIONS_QUERY_KEY = 'submissions';
+export const SUBMISSIONS_PAGE_SIZE = 10; // matching PAGE_SIZE in Django settings
+
+export const submissionKeys = {
+  all: ['submissions'] as const,
+  list: (filters: SubmissionListFilters) => [...submissionKeys.all, 'list', filters] as const,
+  detail: (id: string) => [...submissionKeys.all, 'detail', id] as const,
+};
 
 async function fetchSubmissions(filters: SubmissionListFilters) {
   const response = await apiClient.get<PaginatedResponse<SubmissionListItem>>('/submissions/', {
@@ -19,12 +24,14 @@ async function fetchSubmissions(filters: SubmissionListFilters) {
       status: filters.status,
       brokerId: filters.brokerId,
       companySearch: filters.companySearch,
+      priority: filters.priority,
+      page: filters.page,
     },
   });
   return response.data;
 }
 
-async function fetchSubmissionDetail(id: string | number) {
+async function fetchSubmissionDetail(id: string) {
   if (!id) {
     throw new Error('Submission id is required');
   }
@@ -35,21 +42,16 @@ async function fetchSubmissionDetail(id: string | number) {
 
 export function useSubmissionsList(filters: SubmissionListFilters) {
   return useQuery({
-    queryKey: [SUBMISSIONS_QUERY_KEY, filters] as QueryKey,
+    queryKey: submissionKeys.list(filters),
     queryFn: () => fetchSubmissions(filters),
-    enabled: false,
+    placeholderData: keepPreviousData,
   });
 }
 
-export function useSubmissionDetail(id: string | number) {
+export function useSubmissionDetail(id: string) {
   return useQuery({
-    queryKey: [SUBMISSIONS_QUERY_KEY, id],
+    queryKey: submissionKeys.detail(id),
     queryFn: () => fetchSubmissionDetail(id),
-    enabled: false,
-    staleTime: 60_000,
+    enabled: Boolean(id),
   });
-}
-
-export function useSubmissionQueryKey(filters: SubmissionListFilters) {
-  return useMemo(() => [SUBMISSIONS_QUERY_KEY, filters] as QueryKey, [filters]);
 }
